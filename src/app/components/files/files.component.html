@@ -1,0 +1,8 @@
+<mat-form-field class="w-100">
+  <mat-label>Collect links from:</mat-label>
+  <mat-select [(ngModel)]="selectedOpt" name="fromSource">
+    @for (opt of options; track opt) {
+      <mat-option [value]="opt.value">{{opt.name}}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>
