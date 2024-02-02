@@ -1,5 +1,4 @@
 import { Component, OnInit, Signal, WritableSignal, signal } from '@angular/core';
-import { text } from 'cheerio/lib/api/manipulation';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -19,11 +18,15 @@ export class FilesComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    toObservable(this.selectedOpt).subscribe((value) => {
-      switch(value){
-        case('clipboard'): this.getUrlsFromClipboard().then(urls => this.fileLinks = urls); break;
-      }
-    });
+  }
+
+  async sourceChange(event: any) {
+    switch(event){
+      case('clipboard'): this.getUrlsFromClipboard().then(urls => {
+        this.fileLinks = urls
+        console.log('fileLinks:', this.fileLinks);
+      }); break;
+    }
   }
 
   async updateSelectedOpt(event: Event) {
