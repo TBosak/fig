@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Tray, Menu } = require('electron');
+const { app, BrowserWindow, Tray, Menu, clipboard, ipcMain } = require('electron');
     const url = require("url");
     const path = require("path");
 
     let mainWindow
     let tray = null; // Global reference
     let appIcon = path.join(__dirname, 'fig.png');
+    let previousClipText = clipboard.readText();
 
     function createWindow () {
       mainWindow = new BrowserWindow({
@@ -64,3 +65,17 @@ function createTray() {
   tray.setToolTip('Fig');
   tray.setContextMenu(contextMenu);
 }
+
+setInterval(() => {
+  const currentClipText = clipboard.readText();
+  if (currentClipText !== previousClipText) {
+    console.log('Clipboard changed:', currentClipText);
+    previousClipText = currentClipText;
+  }
+}, 1000);
+
+ipcMain.on('message-from-angular', (event, args) => {
+  console.log(args); // logs out "Hello from Angular"
+  // You can also send a message back to Angular
+  event.sender.send('message-from-electron', 'Hello from Electron');
+});

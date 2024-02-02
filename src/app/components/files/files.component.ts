@@ -1,5 +1,5 @@
-import { Component, OnInit, Signal, WritableSignal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { Component, Input, OnInit, WritableSignal, signal } from '@angular/core';
+
 
 @Component({
   selector: 'app-files',
@@ -18,6 +18,11 @@ export class FilesComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
+    // ipcRenderer.send('message-from-angular', 'Hello from Angular');
+
+    // ipcRenderer.on('message-from-electron', (event:any, message:any) => {
+    //   console.log(message);
+    // });
   }
 
   async sourceChange(event: any) {
