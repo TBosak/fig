@@ -21,9 +21,9 @@ export class FilesComponent implements OnInit {
   ngOnInit() {
     this.electron.messages.subscribe((message)=>{
       console.log('message:', message);
-      if(message.type === 'fileLinks'){
-        const currentLinks = this.fileLinks.getValue();
-        this.fileLinks.next([...currentLinks, message]);
+      if(message["fileLinks"] === 'fileLinks'){
+        console.log('fileLinks:', message.fileLinks);
+        this.sourceChange('clipboard');
       }
     })
   }
