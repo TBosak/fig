@@ -1,6 +1,20 @@
-import { Component, Input, OnInit, WritableSignal, signal } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, WritableSignal, signal } from '@angular/core';
 import { ElectronService } from '../../services/electron.service';
-import { BehaviorSubject } from 'rxjs';
+import { liveQuery } from 'dexie';
+import { FileDownload, db } from '../../db/db';
+import { ColDef, createGrid } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+function actionCellRenderer(params:any) {
+  let eGui = document.createElement("div");
+  eGui.innerHTML = `
+  <span class="action-button download" data-action="download" >⬇️</span>
+  <span class="action-button edit"  data-action="edit" >📝</span>
+  <span class="action-button delete" data-action="delete" >❌</span>
+`;
+  return eGui;
+}
 
 @Component({
   selector: 'app-files',
@@ -8,31 +22,37 @@ import { BehaviorSubject } from 'rxjs';
   styleUrls: ['./files.component.scss']
 })
 export class FilesComponent implements OnInit {
+  colDefs: ColDef<FileDownload>[] = [
+    { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
+    { width: 50},
+    { field: "url", headerName: "URL", width: 500},
+    {
+      headerName: "Actions",
+      minWidth: 150,
+      cellRenderer: actionCellRenderer,
+      editable: false,
+      colId: "action"
+    }
+  ]
+  files: FileDownload[] = [];
   selectedOpt: WritableSignal<string> = signal('clipboard');
-  fileLinks: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
   options=[
     {name: 'Clipboard', value: 'clipboard'},
     {name: 'File', value: 'file'},
     {name: 'Webpage', value: 'webpage'},
   ]
-
+  fileLinks = liveQuery(() => db.fileDownloads.toArray());
   constructor(public electron: ElectronService) { }
 
   ngOnInit() {
-    this.electron.messages.subscribe((message)=>{
-      console.log('message:', message);
-      if(message["fileLinks"] === 'fileLinks'){
-        console.log('fileLinks:', message.fileLinks);
-        this.sourceChange('clipboard');
-      }
-    })
   }
 
   async sourceChange(event: any) {
     switch(event){
       case('clipboard'): this.getUrlsFromClipboard().then(urls => {
-        const currentLinks = this.fileLinks.getValue();
-        this.fileLinks.next([...currentLinks, ...urls]);
+        urls.forEach((link: string) => {
+          this.addNewUrl(link);
+        });
       }); break;
     }
   }
@@ -58,4 +78,44 @@ export class FilesComponent implements OnInit {
     return text.match(/\bhttps?:\/\/\S+\.(pdf|zip|tar|gz|docx|xlsx|pptx|mp3|mp4|jpg|jpeg|png|gif|csv)\b/gi) || [];
   }
 
+  onCellClicked(params:any) {
+    // Handle click event for action cells
+    if (params.column.colId === "action" && params.event.target.dataset.action) {
+      let action = params.event.target.dataset.action;
+
+      if (action === "edit") {
+        params.api.startEditingCell({
+          rowIndex: params.node.rowIndex,
+          // gets the first columnKey
+          colKey: params.columnApi.getDisplayedCenterColumns()[0].colId
+        });
+      }
+
+      if (action === "delete") {
+        params.api.applyTransaction({
+          remove: [params.node.data]
+        });
+        this.deleteFile(params.node.data.id);
+      }
+
+      if (action === "update") {
+        params.api.stopEditing(false);
+      }
+
+      if (action === "cancel") {
+        params.api.stopEditing(true);
+      }
+    }
+  }
+
+  //DB operations
+  async addNewUrl(link: string) {
+    await db.fileDownloads.add({
+      url: link
+    });
+  }
+
+  async deleteFile(id: number) {
+    await db.fileDownloads.delete(id);
+  }
 }

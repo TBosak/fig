@@ -1,4 +1,7 @@
 import { Component } from '@angular/core';
+import { ElectronService } from './services/electron.service';
+import { BehaviorSubject } from 'rxjs';
+import { db, FileDownload } from './db/db';
 
 @Component({
   selector: 'app-root',
@@ -7,6 +10,7 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'fig';
+  fileLinks: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
   tabs =[
     {name:'Downloads', path: ['/downloads']},
     {name: 'Files', path: ['/files']},
@@ -14,4 +18,22 @@ export class AppComponent {
   ];
   activeLink = this.tabs[0].name;
 
+  constructor(public electron: ElectronService) {}
+
+  ngOnInit() {
+    this.electron.messages.subscribe((message: any)=>{
+      const messageObj = JSON.parse(message.toString());
+      if(messageObj.fileLinks.length > 0){
+        messageObj.fileLinks.forEach((link: string) => {
+          this.addNewUrl(link);
+        });
+      }
+    });
+  }
+
+  async addNewUrl(link: string) {
+    await db.fileDownloads.add({
+      url: link
+    });
+  }
   }

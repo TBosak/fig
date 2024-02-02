@@ -6,6 +6,11 @@
     }
   </mat-select>
 </mat-form-field>
-<div>
-    {{ (fileLinks | async) }}
-</div>
+<ag-grid-angular
+style="width: 100%; height: 90vh; overflow: auto;"
+class="ag-theme-quartz"
+rowSelection="multiple"
+[rowData]="fileLinks | async"
+(cellClicked)="onCellClicked($event)"
+[columnDefs]="colDefs">
+</ag-grid-angular>
