@@ -10,6 +10,8 @@ const {
 const url = require("url");
 const path = require("path");
 const WebSocket = require("ws");
+const axios = require("axios");
+const fs = require("fs");
 const wss = new WebSocket.Server({ port: 8080 });
 
 let mainWindow;
@@ -109,7 +111,17 @@ setInterval(() => {
 
 wss.on("connection", function connection(ws) {
   ws.on("message", function incoming(message) {
-    console.log("received: %s", message);
+    const msg = JSON.parse(message);
+    if (Object.keys(msg)[0] === "download"){
+      msg.download.forEach((file) => {
+        axios.get(file, {responseType: 'stream'}).then((response) => {
+          const fileName = file.split("/").pop();
+          const filePath = path.join(__dirname, "downloads", fileName);
+          const writer = fs.createWriteStream(filePath);
+          response.data.pipe(writer);
+        });
+      });
+    }
   });
 });
 

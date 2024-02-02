@@ -5,13 +5,14 @@ import { FileDownload, db } from '../../db/db';
 import { ColDef, createGrid } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
+import { AgGridAngular } from 'ag-grid-angular';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
   eGui.innerHTML = `
-  <span class="action-button download" data-action="download" >⬇️</span>
-  <span class="action-button edit"  data-action="edit" >📝</span>
-  <span class="action-button delete" data-action="delete" >❌</span>
+  <span class="action-button download" data-action="download" title="Download">⬇️</span>
+  <span class="action-button edit"  data-action="edit" title="Edit">📝</span>
+  <span class="action-button delete" data-action="delete" title="Delete">❌</span>
 `;
   return eGui;
 }
@@ -24,7 +25,6 @@ function actionCellRenderer(params:any) {
 export class FilesComponent implements OnInit {
   colDefs: ColDef<FileDownload>[] = [
     { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
-    { width: 50},
     { field: "url", headerName: "URL", width: 500},
     {
       headerName: "Actions",
@@ -45,6 +45,13 @@ export class FilesComponent implements OnInit {
   constructor(public electron: ElectronService) { }
 
   ngOnInit() {
+
+  }
+
+  async onSelectionChanged(event: any) {
+    const selectedNodes = event.api.getSelectedNodes();
+    const selectedData = selectedNodes.map((node: any) => node.data);
+
   }
 
   async sourceChange(event: any) {
@@ -82,6 +89,10 @@ export class FilesComponent implements OnInit {
     // Handle click event for action cells
     if (params.column.colId === "action" && params.event.target.dataset.action) {
       let action = params.event.target.dataset.action;
+
+      if (action === "download") {
+        this.electron.sendMessage(JSON.stringify({download: [params.node.data.url]}));
+      }
 
       if (action === "edit") {
         params.api.startEditingCell({

@@ -9,7 +9,7 @@ import { OptionsComponent } from './components/options/options.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import {MatTabsModule} from '@angular/material/tabs';
-import {MatOption, MatSelectModule} from '@angular/material/select';
+import {MatSelectModule} from '@angular/material/select';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatToolbarModule} from '@angular/material/toolbar';
@@ -38,6 +38,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ElectronService } from './services/electron.service';
 import { MatOptionModule } from '@angular/material/core';
 import { AgGridAngular } from 'ag-grid-angular';
+import {CdkMenuModule} from '@angular/cdk/menu';
 
 @NgModule({
   imports: [
@@ -74,7 +75,8 @@ import { AgGridAngular } from 'ag-grid-angular';
     MatStepperModule,
     MatCheckboxModule,
     MatOptionModule,
-    AgGridAngular
+    AgGridAngular,
+    CdkMenuModule
   ],
   declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent],
   providers: [
