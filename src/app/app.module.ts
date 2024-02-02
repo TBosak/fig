@@ -1,4 +1,4 @@
-import { NgModule, ApplicationConfig } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppComponent } from './app.component';
 import { RouterModule, RouterOutlet, provideRouter } from '@angular/router';
@@ -34,7 +34,7 @@ import {MatSliderModule} from '@angular/material/slider';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatStepperModule} from '@angular/material/stepper';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-
+import { ElectronService } from './services/electron.service';
 
 @NgModule({
   imports: [
@@ -72,6 +72,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   ],
   declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent],
   providers: [
+    ElectronService,
     provideRouter(routes),
     provideAnimationsAsync()
   ],

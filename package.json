@@ -2,6 +2,7 @@
   "name": "fig",
   "version": "0.0.0",
   "main": "app.js",
+  "platform": "node",
   "scripts": {
     "ng": "ng",
     "start": "ng build --base-href ./ && electron .",
@@ -23,8 +24,11 @@
     "@angular/router": "^17.1.0",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
+    "concurrently": "^8.2.2",
+    "electron-builder": "^24.9.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
+    "wait-on": "^7.2.0",
     "zone.js": "~0.14.3"
   },
   "devDependencies": {

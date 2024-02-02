@@ -7,8 +7,5 @@
   </mat-select>
 </mat-form-field>
 <div>
-  @if(selectedOpt() === 'clipboard')
-  {
-    {{ fileLinks }}
-  }
+    {{ (fileLinks | async) }}
 </div>

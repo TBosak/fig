@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, WritableSignal, signal } from '@angular/core';
-
+import { ElectronService } from '../../services/electron.service';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-files',
@@ -8,28 +9,30 @@ import { Component, Input, OnInit, WritableSignal, signal } from '@angular/core'
 })
 export class FilesComponent implements OnInit {
   selectedOpt: WritableSignal<string> = signal('clipboard');
-  fileLinks: string[] = [];
+  fileLinks: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
   options=[
     {name: 'Clipboard', value: 'clipboard'},
     {name: 'File', value: 'file'},
     {name: 'Webpage', value: 'webpage'},
   ]
 
-  constructor() { }
+  constructor(public electron: ElectronService) { }
 
   ngOnInit() {
-    // ipcRenderer.send('message-from-angular', 'Hello from Angular');
-
-    // ipcRenderer.on('message-from-electron', (event:any, message:any) => {
-    //   console.log(message);
-    // });
+    this.electron.messages.subscribe((message)=>{
+      console.log('message:', message);
+      if(message.type === 'fileLinks'){
+        const currentLinks = this.fileLinks.getValue();
+        this.fileLinks.next([...currentLinks, message]);
+      }
+    })
   }
 
   async sourceChange(event: any) {
     switch(event){
       case('clipboard'): this.getUrlsFromClipboard().then(urls => {
-        this.fileLinks = urls
-        console.log('fileLinks:', this.fileLinks);
+        const currentLinks = this.fileLinks.getValue();
+        this.fileLinks.next([...currentLinks, ...urls]);
       }); break;
     }
   }
