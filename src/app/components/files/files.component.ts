@@ -1,11 +1,11 @@
-import { Component, Input, OnInit, ViewChild, WritableSignal, signal } from '@angular/core';
+import { AfterViewInit, Component, Input, OnInit, ViewChild, WritableSignal, signal } from '@angular/core';
 import { ElectronService } from '../../services/electron.service';
 import { liveQuery } from 'dexie';
 import { FileDownload, db } from '../../db/db';
-import { ColDef, createGrid } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { AgGridAngular } from 'ag-grid-angular';
+import { ColDef, GridApi, SelectionChangedEvent } from 'ag-grid-community';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
@@ -23,6 +23,8 @@ function actionCellRenderer(params:any) {
   styleUrls: ['./files.component.scss']
 })
 export class FilesComponent implements OnInit {
+  public gridApi!: GridApi;
+  gridSelection: any;
   colDefs: ColDef<FileDownload>[] = [
     { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
     { field: "url", headerName: "URL", width: 500},
@@ -42,16 +44,20 @@ export class FilesComponent implements OnInit {
     {name: 'Webpage', value: 'webpage'},
   ]
   fileLinks = liveQuery(() => db.fileDownloads.toArray());
+
   constructor(public electron: ElectronService) { }
 
   ngOnInit() {
 
   }
 
-  async onSelectionChanged(event: any) {
-    const selectedNodes = event.api.getSelectedNodes();
-    const selectedData = selectedNodes.map((node: any) => node.data);
+  onSelectionChanged(event: SelectionChangedEvent) {
+    const selectedData = this.gridApi.getSelectedRows();
+    this.electron.sendMessage(JSON.stringify({download: Array.from(selectedData.map((row: any) => row.url))}));
+  }
 
+  async onGridReady(params: any) {
+    this.gridApi = params.api;
   }
 
   async sourceChange(event: any) {

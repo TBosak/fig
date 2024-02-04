@@ -109,16 +109,40 @@ setInterval(() => {
   }
 }, 1000);
 
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
 wss.on("connection", function connection(ws) {
   ws.on("message", function incoming(message) {
     const msg = JSON.parse(message);
-    if (Object.keys(msg)[0] === "download"){
+    if (Object.keys(msg)[0] === "download") {
       msg.download.forEach((file) => {
-        axios.get(file, {responseType: 'stream'}).then((response) => {
+        axios.get(file, { responseType: 'stream' }).then((response) => {
+          const totalLength = response.headers['content-length'];
+          let downloadedLength = 0;
           const fileName = file.split("/").pop();
           const filePath = path.join(__dirname, "downloads", fileName);
           const writer = fs.createWriteStream(filePath);
+
+          response.data.on('data', (chunk) => {
+            downloadedLength += chunk.length;
+            const progress = totalLength ? (downloadedLength / totalLength * 100).toFixed(2) : null;
+            // Send progress update
+            ws.send(JSON.stringify({ type: 'downloadProgress', file: fileName, progress: progress }));
+          });
+
           response.data.pipe(writer);
+
+          writer.on('finish', () => {
+            ws.send(JSON.stringify({ type: 'downloadComplete', file: fileName, progress: 100 }));
+          });
+          writer.on('error', () => {
+            ws.send(JSON.stringify({ type: 'downloadError', file: fileName, message: 'Download failed' }));
+          });
+        }).catch(error => {
+          // Handle errors, such as network issues or file not found
+          ws.send(JSON.stringify({ type: 'downloadError', file: fileName, message: error.message }));
         });
       });
     }

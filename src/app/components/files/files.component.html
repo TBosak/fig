@@ -7,10 +7,12 @@
   </mat-select>
 </mat-form-field>
 <ag-grid-angular
-(selectionChanged)="onSelectionChanged($event)"
+#Grid
 style="width: 100%; height: 90vh; overflow: auto;"
 class="ag-theme-quartz"
 rowSelection="multiple"
+(selectionChanged)="onSelectionChanged($event)"
+(gridReady)="onGridReady($event)"
 [rowData]="fileLinks | async"
 (cellClicked)="onCellClicked($event)"
 [columnDefs]="colDefs">
