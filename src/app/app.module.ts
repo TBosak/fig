@@ -39,8 +39,7 @@ import { ElectronService } from './services/electron.service';
 import { MatOptionModule } from '@angular/material/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {CdkMenuModule} from '@angular/cdk/menu';
-import { DownloadProgressRendererComponent } from './components/downloads/progress.renderer';
-import { DownloadService } from './services/download.service';
+import { DownloadProgressRendererComponent } from './components/shared/progress.renderer';
 
 @NgModule({
   imports: [
@@ -83,7 +82,6 @@ import { DownloadService } from './services/download.service';
   declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent, DownloadProgressRendererComponent],
   providers: [
     ElectronService,
-    DownloadService,
     provideRouter(routes),
     provideAnimationsAsync()
   ],

@@ -5,6 +5,7 @@ import { FileDownload, db } from '../../db/db';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { ColDef, GridApi, SelectionChangedEvent } from 'ag-grid-community';
+import { DownloadProgressRendererComponent } from '../shared/progress.renderer';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
@@ -26,10 +27,14 @@ export class FilesComponent implements OnInit {
   gridSelection: any;
   colDefs: ColDef<FileDownload>[] = [
     { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
-    { field: "url", headerName: "URL", width: 500},
+    { field: "url", headerName: "URL", width: 150},
+    {
+      headerName: 'Download Progress',
+      cellRenderer: DownloadProgressRendererComponent,
+    },
     {
       headerName: "Actions",
-      minWidth: 150,
+      width: 100,
       cellRenderer: actionCellRenderer,
       editable: false,
       colId: "action"

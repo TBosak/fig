@@ -136,6 +136,7 @@ wss.on("connection", function connection(ws) {
             downloaded += chunk.length;
             const progress = (downloaded / totalLength * 100).toFixed(2);
             // Send progress update for each chunk received
+            console.log(`File:${fileName}, Downloaded ${progress}%`);
             ws.send(JSON.stringify({ type: 'downloadProgress', file: file.id, progress: progress }));
           });
 

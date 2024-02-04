@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ElectronService } from './services/electron.service';
+import { DownloadState, ElectronService } from './services/electron.service';
 import { BehaviorSubject } from 'rxjs';
 import { db, FileDownload } from './db/db';
 
@@ -17,6 +17,9 @@ export class AppComponent {
     {name: 'Options', path: ['/options']}
   ];
   activeLink = this.tabs[0].name;
+  private downloadStates: { [fileId: number]: DownloadState } = {};
+  private downloadStateSubjects: { [fileId: number]: BehaviorSubject<DownloadState> } = {};
+  private allDownloadsSubject = new BehaviorSubject<{ [fileId: number]: DownloadState }>({});
 
   constructor(public electron: ElectronService) {}
 
@@ -29,7 +32,11 @@ export class AppComponent {
         });
       }
     });
+    this.electron.getAllDownloadStates().subscribe((states: any) => {
+      console.log(states);
+    });
   }
+
 
   async addNewUrl(link: string) {
     await db.fileDownloads.add({
