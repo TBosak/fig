@@ -23,8 +23,8 @@ export class AppComponent {
   ngOnInit() {
     this.electron.messages.subscribe((message: any)=>{
       const messageObj = JSON.parse(message.toString());
-      if(messageObj.fileLinks.length > 0){
-        messageObj.fileLinks.forEach((link: string) => {
+      if(messageObj.fileLinks?.length > 0){
+        messageObj.fileLinks?.forEach((link: string) => {
           this.addNewUrl(link);
         });
       }

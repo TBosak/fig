@@ -1,10 +1,9 @@
-import { AfterViewInit, Component, Input, OnInit, ViewChild, WritableSignal, signal } from '@angular/core';
+import { Component, OnInit, WritableSignal, signal } from '@angular/core';
 import { ElectronService } from '../../services/electron.service';
 import { liveQuery } from 'dexie';
 import { FileDownload, db } from '../../db/db';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
-import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef, GridApi, SelectionChangedEvent } from 'ag-grid-community';
 
 function actionCellRenderer(params:any) {
@@ -53,7 +52,8 @@ export class FilesComponent implements OnInit {
 
   onSelectionChanged(event: SelectionChangedEvent) {
     const selectedData = this.gridApi.getSelectedRows();
-    this.electron.sendMessage(JSON.stringify({download: Array.from(selectedData.map((row: any) => row.url))}));
+    console.log({download: Array.from(selectedData.map((row: any) => row.url))});
+    this.electron.sendMessage(JSON.stringify({download: Array.from(selectedData)}));
   }
 
   async onGridReady(params: any) {

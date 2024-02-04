@@ -109,40 +109,59 @@ setInterval(() => {
   }
 }, 1000);
 
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-
 wss.on("connection", function connection(ws) {
   ws.on("message", function incoming(message) {
     const msg = JSON.parse(message);
     if (Object.keys(msg)[0] === "download") {
-      msg.download.forEach((file) => {
-        axios.get(file, { responseType: 'stream' }).then((response) => {
-          const totalLength = response.headers['content-length'];
-          let downloadedLength = 0;
-          const fileName = file.split("/").pop();
-          const filePath = path.join(__dirname, "downloads", fileName);
+      // Map each file URL to a Promise of its download process
+      const downloadPromises = msg.download.map((file, index) => {
+        return axios({
+          method: 'get',
+          url: file.url,
+          responseType: 'stream',
+          onDownloadProgress: progressEvent => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            // Send progress update via WebSocket
+            ws.send(JSON.stringify({ type: 'downloadProgress', file: file.id, progress: percentCompleted }));
+          }
+        }).then((response) => {
+          const fileName = file.url.split("/").pop();
+          const filePath = path.join(__dirname, fileName);
           const writer = fs.createWriteStream(filePath);
 
+          let downloaded = 0;
+          const totalLength = response.headers['content-length'];
+
           response.data.on('data', (chunk) => {
-            downloadedLength += chunk.length;
-            const progress = totalLength ? (downloadedLength / totalLength * 100).toFixed(2) : null;
-            // Send progress update
-            ws.send(JSON.stringify({ type: 'downloadProgress', file: fileName, progress: progress }));
+            downloaded += chunk.length;
+            const progress = (downloaded / totalLength * 100).toFixed(2);
+            // Send progress update for each chunk received
+            ws.send(JSON.stringify({ type: 'downloadProgress', file: file.id, progress: progress }));
           });
 
           response.data.pipe(writer);
 
-          writer.on('finish', () => {
-            ws.send(JSON.stringify({ type: 'downloadComplete', file: fileName, progress: 100 }));
+          return new Promise((resolve, reject) => {
+            writer.on('finish', () => {
+              ws.send(JSON.stringify({ type: 'downloadComplete', file: file.id }));
+              resolve();
+            });
+            writer.on('error', (error) => {
+              ws.send(JSON.stringify({ type: 'downloadError', file: file.id, message: error.message }));
+              reject(error);
+            });
           });
-          writer.on('error', () => {
-            ws.send(JSON.stringify({ type: 'downloadError', file: fileName, message: 'Download failed' }));
-          });
-        }).catch(error => {
-          // Handle errors, such as network issues or file not found
-          ws.send(JSON.stringify({ type: 'downloadError', file: fileName, message: error.message }));
+        });
+      });
+
+      // Wait for all downloads to complete
+      Promise.allSettled(downloadPromises).then((results) => {
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            console.log(`File download successful`);
+          } else {
+            console.error(`Failed to download file: ${result.reason}`);
+          }
         });
       });
     }
