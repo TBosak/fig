@@ -1,8 +1,13 @@
 <ag-grid-angular
   #Grid
-  style="width: 100%; height: 90vh; overflow: auto;"
+  style="width: 100%; height: 65vh; overflow: auto;"
   class="ag-theme-quartz"
   rowSelection="multiple"
   [rowData]="downloadStatuses | async"
   [columnDefs]="colDefs">
 </ag-grid-angular>
+<div class="mat-action-row">
+  <button>
+    <mat-icon>delete</mat-icon>
+  </button>
+</div>

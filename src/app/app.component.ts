@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { DownloadState, ElectronService } from './services/electron.service';
 import { BehaviorSubject } from 'rxjs';
 import { db, FileDownload } from './db/db';
+import { DataService } from './services/data.service';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +22,7 @@ export class AppComponent {
   private downloadStateSubjects: { [fileId: number]: BehaviorSubject<DownloadState> } = {};
   private allDownloadsSubject = new BehaviorSubject<{ [fileId: number]: DownloadState }>({});
 
-  constructor(public electron: ElectronService) {}
+  constructor(public electron: ElectronService, public data: DataService) {}
 
   ngOnInit() {
     this.electron.messages.subscribe((message: any)=>{
@@ -31,9 +32,14 @@ export class AppComponent {
           this.addNewUrl(link);
         });
       }
-    });
-    this.electron.getAllDownloadStates().subscribe((states: any) => {
-      console.log(states);
+      if(messageObj.defaultPath){
+        this.data.setValue({defaultPath: messageObj.defaultPath});
+        db.fileDownloads.toArray().then((fileDownloads: FileDownload[]) => {
+          fileDownloads.forEach((fileDownload: FileDownload) => {
+            db.fileDownloads.put({...fileDownload, path: messageObj.defaultPath});
+          });
+        });
+      }
     });
   }
 

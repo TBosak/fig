@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ElectronService } from '../../services/electron.service';
 
 @Component({
   selector: 'app-options',
@@ -7,9 +8,13 @@ import { Component, OnInit } from '@angular/core';
 })
 export class OptionsComponent implements OnInit {
 
-  constructor() { }
+  constructor(public electron: ElectronService) { }
 
   ngOnInit() {
+  }
+
+  setDefaultPath(){
+    this.electron.sendMessage(JSON.stringify({setDefaultPath: true}));
   }
 
 }

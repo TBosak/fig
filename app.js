@@ -126,7 +126,7 @@ wss.on("connection", function connection(ws) {
           }
         }).then((response) => {
           const fileName = file.url.split("/").pop();
-          const filePath = path.join(__dirname, fileName);
+          const filePath = path.join(file.customPath ? file.customPath : (file.path ? file.path : app.getPath('downloads')), fileName);
           const writer = fs.createWriteStream(filePath);
 
           let downloaded = 0;
@@ -165,6 +165,21 @@ wss.on("connection", function connection(ws) {
           }
         });
       });
+    }
+    if (msg.setDefaultPath === true) {
+      dialog
+        .showOpenDialog({
+          properties: ["openDirectory"],
+        })
+        .then((result) => {
+          if (result.canceled === false) {
+            ws.send(
+              JSON.stringify({
+                defaultPath: result.filePaths[0],
+              })
+            );
+          }
+        });
     }
   });
 });

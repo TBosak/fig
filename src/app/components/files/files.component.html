@@ -1,14 +1,9 @@
-<mat-form-field class="w-100">
-  <mat-label>Collect links from:</mat-label>
-  <mat-select (valueChange)="sourceChange($event)" name="fromSource">
-    @for (opt of options; track opt) {
-      <mat-option [value]="opt.value">{{opt.name}}</mat-option>
-    }
-  </mat-select>
-</mat-form-field>
+  <button mat-raised-button color="primary" class="w-100">
+    Add Links
+  </button>
 <ag-grid-angular
 #Grid
-style="width: 100%; height: 90vh; overflow: auto;"
+style="width: 100%; height: 65vh; overflow: auto;"
 class="ag-theme-quartz"
 rowSelection="multiple"
 (selectionChanged)="onSelectionChanged($event)"
@@ -17,3 +12,8 @@ rowSelection="multiple"
 (cellClicked)="onCellClicked($event)"
 [columnDefs]="colDefs">
 </ag-grid-angular>
+<div>
+  <button mat-icon-button [disabled]="!downloadEnabled" (click)="downloadSelected()">
+    <mat-icon>download</mat-icon>
+  </button>
+</div>

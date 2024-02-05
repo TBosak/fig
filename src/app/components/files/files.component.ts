@@ -1,11 +1,13 @@
 import { Component, OnInit, WritableSignal, signal } from '@angular/core';
-import { ElectronService } from '../../services/electron.service';
+import { DownloadState, ElectronService } from '../../services/electron.service';
 import { liveQuery } from 'dexie';
-import { FileDownload, db } from '../../db/db';
+import { AppState, FileDownload, db } from '../../db/db';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { ColDef, GridApi, SelectionChangedEvent } from 'ag-grid-community';
 import { DownloadProgressRendererComponent } from '../shared/progress.renderer';
+import { firstValueFrom, interval, take } from 'rxjs';
+import { DataService } from '../../services/data.service';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
@@ -24,11 +26,33 @@ function actionCellRenderer(params:any) {
 })
 export class FilesComponent implements OnInit {
   public gridApi!: GridApi;
+  downloadEnabled: boolean = false;
   gridSelection: any;
+  downloadStatesCache: { [fileId: number]: DownloadState } = {};
+  appState!: AppState;
   colDefs: ColDef<FileDownload>[] = [
     { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
     { field: "url", headerName: "URL", width: 150},
     {
+      field: "customPath",
+      headerName: "Path",
+      cellRenderer: (params: any) => params.value ? params.value : (this.appState.defaultPath ? this.appState.defaultPath : "System Default")
+    },
+    {
+      field: "id",
+      comparator: (valueA, valueB, nodeA, nodeB, isDescending) => {
+        const firstState = this.downloadStatesCache[valueA]?.progress || 0;
+        const secondState = this.downloadStatesCache[valueB]?.progress || 0;
+
+        // Normal comparison logic based on progress
+        if (firstState === secondState) {
+          return 0; // Equal progress
+        } else if (firstState > secondState) {
+          return isDescending ? -1 : 1; // Higher progress
+        } else {
+          return isDescending ? 1 : -1; // Lower progress
+        }
+      },
       headerName: 'Download Progress',
       cellRenderer: DownloadProgressRendererComponent,
     },
@@ -49,15 +73,33 @@ export class FilesComponent implements OnInit {
   ]
   fileLinks = liveQuery(() => db.fileDownloads.toArray());
 
-  constructor(public electron: ElectronService) { }
+  constructor(public electron: ElectronService, public data: DataService) { }
 
   ngOnInit() {
-
+    this.data.observable.subscribe((state) => {
+      this.appState = state;
+      this.gridApi?.refreshCells();
+    });
+    this.fileLinks.subscribe((fileLinks) => {
+      this.files = fileLinks;
+    });
+    interval(500).subscribe(() => {
+      this.updateDownloadStatesCache(this.files.map(file => file.id ?? -1));
+    });
   }
 
   onSelectionChanged(event: SelectionChangedEvent) {
     const selectedData = this.gridApi.getSelectedRows();
-    console.log({download: Array.from(selectedData.map((row: any) => row.url))});
+    if (selectedData.length > 0) {
+      this.downloadEnabled = true;
+    }
+    else {
+      this.downloadEnabled = false;
+    }
+  }
+
+  downloadSelected() {
+    const selectedData = this.gridApi.getSelectedRows();
     this.electron.sendMessage(JSON.stringify({download: Array.from(selectedData)}));
   }
 
@@ -140,4 +182,16 @@ export class FilesComponent implements OnInit {
   async deleteFile(id: number) {
     await db.fileDownloads.delete(id);
   }
+
+async updateDownloadStatesCache(ids: number[]){
+  const promises = ids.map((id: number) =>
+    firstValueFrom(this.electron.getDownloadState(id))
+      .then(state => ({ id, state }))
+  );
+
+  const results = await Promise.all(promises);
+  results.forEach(({ id, state }) => {
+    this.downloadStatesCache[id] = state;
+  });
+}
 }
