@@ -8,6 +8,8 @@ import { ColDef, GridApi, SelectionChangedEvent } from 'ag-grid-community';
 import { DownloadProgressRendererComponent } from '../shared/progress.renderer';
 import { firstValueFrom, interval, take } from 'rxjs';
 import { DataService } from '../../services/data.service';
+import { MatDialog } from '@angular/material/dialog';
+import { FilesDialog } from '../shared/files.dialog';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
@@ -73,7 +75,7 @@ export class FilesComponent implements OnInit {
   ]
   fileLinks = liveQuery(() => db.fileDownloads.toArray());
 
-  constructor(public electron: ElectronService, public data: DataService) { }
+  constructor(public electron: ElectronService, public data: DataService, public dialog: MatDialog) { }
 
   ngOnInit() {
     this.data.observable.subscribe((state) => {
@@ -192,6 +194,17 @@ async updateDownloadStatesCache(ids: number[]){
   const results = await Promise.all(promises);
   results.forEach(({ id, state }) => {
     this.downloadStatesCache[id] = state;
+  });
+}
+
+openDialog(){
+  const dialogRef = this.dialog.open(FilesDialog, {
+    width: '250px',
+    data: {}
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    console.log('The dialog was closed');
   });
 }
 }

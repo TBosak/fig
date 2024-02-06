@@ -40,6 +40,7 @@ import { MatOptionModule } from '@angular/material/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {CdkMenuModule} from '@angular/cdk/menu';
 import { DownloadProgressRendererComponent } from './components/shared/progress.renderer';
+import { FilesDialog } from './components/shared/files.dialog';
 
 @NgModule({
   imports: [
@@ -79,7 +80,7 @@ import { DownloadProgressRendererComponent } from './components/shared/progress.
     AgGridAngular,
     CdkMenuModule
   ],
-  declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent, DownloadProgressRendererComponent],
+  declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent, DownloadProgressRendererComponent, FilesDialog],
   providers: [
     ElectronService,
     provideRouter(routes),
