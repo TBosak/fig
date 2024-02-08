@@ -41,6 +41,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import {CdkMenuModule} from '@angular/cdk/menu';
 import { DownloadProgressRendererComponent } from './components/shared/progress.renderer';
 import { FilesDialog } from './components/shared/files.dialog';
+import { UrlRendererComponent } from './components/shared/url.renderer';
 
 @NgModule({
   imports: [
@@ -80,7 +81,7 @@ import { FilesDialog } from './components/shared/files.dialog';
     AgGridAngular,
     CdkMenuModule
   ],
-  declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent, DownloadProgressRendererComponent, FilesDialog],
+  declarations: [AppComponent, DownloadsComponent, FilesComponent, OptionsComponent, DownloadProgressRendererComponent, UrlRendererComponent, FilesDialog],
   providers: [
     ElectronService,
     provideRouter(routes),

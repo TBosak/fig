@@ -10,6 +10,7 @@ import { firstValueFrom, interval, take } from 'rxjs';
 import { DataService } from '../../services/data.service';
 import { MatDialog } from '@angular/material/dialog';
 import { FilesDialog } from '../shared/files.dialog';
+import { UrlRendererComponent } from '../shared/url.renderer';
 
 function actionCellRenderer(params:any) {
   let eGui = document.createElement("div");
@@ -34,7 +35,12 @@ export class FilesComponent implements OnInit {
   appState!: AppState;
   colDefs: ColDef<FileDownload>[] = [
     { field: "id", headerName: "", checkboxSelection: true, headerCheckboxSelection: true, width: 50},
-    { field: "url", headerName: "URL", width: 150},
+    {
+      field: "url",
+      headerName: "URL",
+      width: 150,
+      cellRenderer: UrlRendererComponent,
+    },
     {
       field: "customPath",
       headerName: "Path",
@@ -136,8 +142,16 @@ export class FilesComponent implements OnInit {
     }
   }
 
-  extractFileLinksFromText(text:string) {
-    return text.match(/\bhttps?:\/\/\S+\.(pdf|zip|tar|gz|docx|xlsx|pptx|mp3|mp4|jpg|jpeg|png|gif|csv)\b/gi) || [];
+  extractFileLinksFromText(text: any) {
+    // Matches both: URLs ending with specified file extensions and base64 encoded images
+    const urlRegex = /\bhttps?:\/\/\S+\.(pdf|zip|rar|7z|tar|gz|bz2|docx|xlsx|pptx|mp3|mp4|ogg|wav|webm|jpg|jpeg|png|gif|csv)\b/gi;
+    const base64ImageRegex = /data:image\/[a-zA-Z]+;base64,[^\s]+/gi;
+
+    const fileLinks = text.match(urlRegex) || [];
+    const base64Images = text.match(base64ImageRegex) || [];
+
+    // Combine both arrays
+    return [...fileLinks, ...base64Images];
   }
 
   onCellClicked(params:any) {
@@ -199,12 +213,22 @@ async updateDownloadStatesCache(ids: number[]){
 
 openDialog(){
   const dialogRef = this.dialog.open(FilesDialog, {
-    width: '250px',
+    width: '350px',
     data: {}
   });
 
   dialogRef.afterClosed().subscribe(result => {
-    console.log('The dialog was closed');
+    if (result.fileLinks) {
+      this.extractFileLinksFromText(result.fileLinks).forEach((link: string) => {
+      this.addNewUrl(link);
+    });
+  }
+  if (result.scrapeUrls) {
+    this.electron.sendMessage(JSON.stringify({scrapeUrls: result.scrapeUrls}));
+  }
+  if (result.files) {
+
+  }
   });
 }
 }

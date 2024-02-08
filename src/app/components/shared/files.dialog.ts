@@ -8,20 +8,20 @@ import { MatInputModule } from "@angular/material/input";
 @Component({
   selector: 'files-dialog',
   template: `
-  <h1 mat-dialog-title>Add Links</h1>
-  <div mat-dialog-content>
+  <h1 mat-dialog-title align="center" class="w-100">Add Files</h1>
+  <div mat-dialog-content align="center">
     <mat-form-field appearance="fill">
-      <textarea matInput placeholder="Paste file links here" matTextareaAutosize matAutosizeMinRows="4"></textarea>
+      <textarea matInput placeholder="Paste file links here" matTextareaAutosize matAutosizeMinRows="4" [(ngModel)]="data.fileLinks"></textarea>
     </mat-form-field>
     <mat-form-field appearance="fill">
-      <textarea matInput placeholder="Paste urls to scrape here" matTextareaAutosize matAutosizeMinRows="4"></textarea>
+      <textarea matInput placeholder="Paste urls to scrape here" matTextareaAutosize matAutosizeMinRows="4" [(ngModel)]="data.scrapeUrls"></textarea>
     </mat-form-field>
-    <input hidden="true" id="input-file-id" multiple type="file" />
+    <input hidden="true" id="input-file-id" multiple type="file" [(ngModel)]="data.files" />
     <label for="input-file-id" class="mat-raised-button">Choose File(s) with List(s)</label>
   </div>
-  <div mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Cancel</button>
-    <button mat-button [mat-dialog-close]="data" cdkFocusInitial>Add Links</button>
+  <div mat-dialog-actions align="center" class="w-100 m-0">
+  <button mat-raised-button [mat-dialog-close]="data" cdkFocusInitial class="w-100">Add Links</button>
+  <button mat-raised-button mat-dialog-close class="w-100 m-0">Cancel</button>
   </div>
   `
 })

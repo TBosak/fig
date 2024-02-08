@@ -13,7 +13,6 @@ export class AppComponent {
   title = 'fig';
   fileLinks: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
   tabs =[
-    {name:'Downloads', path: ['/downloads']},
     {name: 'Files', path: ['/files']},
     {name: 'Options', path: ['/options']}
   ];

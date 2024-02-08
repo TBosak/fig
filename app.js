@@ -113,50 +113,65 @@ wss.on("connection", function connection(ws) {
   ws.on("message", function incoming(message) {
     const msg = JSON.parse(message);
     if (Object.keys(msg)[0] === "download") {
-      // Map each file URL to a Promise of its download process
-      const downloadPromises = msg.download.map((file, index) => {
-        return axios({
-          method: 'get',
-          url: file.url,
-          responseType: 'stream',
-          onDownloadProgress: progressEvent => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            // Send progress update via WebSocket
-            ws.send(JSON.stringify({ type: 'downloadProgress', file: file.id, progress: percentCompleted }));
-          }
-        }).then((response) => {
-          const fileName = file.url.split("/").pop();
-          const filePath = path.join(file.customPath ? file.customPath : (file.path ? file.path : app.getPath('downloads')), fileName);
-          const writer = fs.createWriteStream(filePath);
-
-          let downloaded = 0;
-          const totalLength = response.headers['content-length'];
-
-          response.data.on('data', (chunk) => {
-            downloaded += chunk.length;
-            const progress = (downloaded / totalLength * 100).toFixed(2);
-            // Send progress update for each chunk received
-            console.log(`File:${fileName}, Downloaded ${progress}%`);
-            ws.send(JSON.stringify({ type: 'downloadProgress', file: file.id, progress: progress }));
-          });
-
-          response.data.pipe(writer);
-
+      const downloadPromises = msg.download.map((file) => {
+        // Check if the URL is a base64 encoded image
+        if (file.url.startsWith('data:image/')) {
           return new Promise((resolve, reject) => {
-            writer.on('finish', () => {
-              ws.send(JSON.stringify({ type: 'downloadComplete', file: file.id }));
-              resolve();
-            });
-            writer.on('error', (error) => {
-              ws.send(JSON.stringify({ type: 'downloadError', file: file.id, message: error.message }));
-              reject(error);
+            // Extract the MIME type and the base64 data
+            const matches = file.url.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) {
+              ws.send(JSON.stringify({ type: 'downloadError', file: file.id, message: 'Invalid base64 image data' }));
+              return reject(new Error('Invalid base64 image data'));
+            }
+
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, 'base64');
+
+            // Determine the file extension based on the MIME type
+            const extension = mimeType.split('/')[1];
+            const fileName = `image_${Date.now()}_${index}.${extension}`;
+            const filePath = path.join(file.customPath ? file.customPath : (file.path ? file.path : app.getPath('downloads')), fileName);
+
+            fs.writeFile(filePath, buffer, (err) => {
+              if (err) {
+                ws.send(JSON.stringify({ type: 'downloadError', file: file.id, message: err.message }));
+                reject(err);
+              } else {
+                ws.send(JSON.stringify({ type: 'downloadComplete', file: file.id }));
+                resolve();
+              }
             });
           });
-        });
+        } else {
+          // Handle regular file URLs with Axios
+          return axios({
+            method: 'get',
+            url: file.url,
+            responseType: 'stream',
+          }).then(response => {
+            const fileName = file.url.split("/").pop();
+            const filePath = path.join(file.customPath ? file.customPath : (file.path ? file.path : app.getPath('downloads')), fileName);
+            const writer = fs.createWriteStream(filePath);
+
+            response.data.pipe(writer);
+
+            return new Promise((resolve, reject) => {
+              writer.on('finish', () => {
+                ws.send(JSON.stringify({ type: 'downloadComplete', file: file.id }));
+                resolve();
+              });
+              writer.on('error', (error) => {
+                ws.send(JSON.stringify({ type: 'downloadError', file: file.id, message: error.message }));
+                reject(error);
+              });
+            });
+          });
+        }
       });
 
       // Wait for all downloads to complete
-      Promise.allSettled(downloadPromises).then((results) => {
+      Promise.allSettled(downloadPromises).then(results => {
         results.forEach((result, index) => {
           if (result.status === 'fulfilled') {
             console.log(`File download successful`);
@@ -181,13 +196,36 @@ wss.on("connection", function connection(ws) {
           }
         });
     }
+      if(msg.scrapeUrls !== null){
+        const urls = extractUrlsFromText(msg.scrapeUrls);
+        urls.forEach((url) => {
+          axios.get(url).then((response) => {
+            const fileLinks = extractFileLinksFromText(response.data);
+            ws.send(JSON.stringify({ type: 'fileLinks', fileLinks }));
+          }).catch((error) => {
+            ws.send(JSON.stringify({ type: 'scrapeUrlsError', message: error.message }));
+          });
+        });
+      }
   });
 });
 
 function extractFileLinksFromText(text) {
+  // Matches both: URLs ending with specified file extensions and base64 encoded images
+  const urlRegex = /\bhttps?:\/\/\S+\.(pdf|zip|rar|7z|tar|gz|bz2|docx|xlsx|pptx|mp3|mp4|ogg|wav|webm|jpg|jpeg|png|gif|csv)\b/gi;
+  const base64ImageRegex = /data:image\/[a-zA-Z]+;base64,[^\s]+/gi;
+
+  const fileLinks = text.match(urlRegex) || [];
+  const base64Images = text.match(base64ImageRegex) || [];
+
+  // Combine both arrays
+  return [...fileLinks, ...base64Images];
+}
+
+function extractUrlsFromText(text) {
   return (
-    text.match(
-      /\bhttps?:\/\/\S+\.(pdf|zip|tar|gz|docx|xlsx|pptx|mp3|mp4|jpg|jpeg|png|gif|csv)\b/gi
+    text?.match(
+      /\bhttps?:\/\/\S+\b/gi
     ) || []
   );
 }
