@@ -27,7 +27,9 @@ export class AppComponent {
     this.electron.messages.subscribe((message: any)=>{
       const messageObj = JSON.parse(message.toString());
       if(messageObj.fileLinks?.length > 0){
+        console.log('fileLinks', messageObj.fileLinks);
         messageObj.fileLinks?.forEach((link: string) => {
+          console.log('link', link)
           this.addNewUrl(link);
         });
       }
@@ -43,9 +45,10 @@ export class AppComponent {
   }
 
 
-  async addNewUrl(link: string) {
+  async addNewUrl(link: any) {
     await db.fileDownloads.add({
-      url: link
+      url: link.url,
+      type: link.type
     });
   }
   }

@@ -30,6 +30,7 @@ export class ElectronService {
     this.ws.onmessage = (messageEvent) => {
       this.messagesSubject.next(messageEvent.data);
       const msg = JSON.parse(messageEvent.data);
+      console.log('WebSocket message:', msg);
       switch (msg.type) {
         case 'downloadProgress':
           console.log(msg.file, msg.progress, msg.completed, msg.error)

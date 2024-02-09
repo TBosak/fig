@@ -5,6 +5,7 @@ export interface FileDownload {
   url: string;
   path?: string;
   customPath?: string;
+  type?: string;
   status?: string;
   progress?: number;
   error?: string;
