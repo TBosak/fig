@@ -7,6 +7,7 @@ export class DownloadState {
   error?: string;
   speed?: string;
   hoster?: string;
+  cancelToken?: string;
 }
 @Injectable({
   providedIn: 'root',
@@ -37,7 +38,7 @@ export class ElectronService {
       switch (msg.type) {
         case 'downloadProgress':
           console.log(msg.file, msg.progress, msg.completed, msg.error)
-          this.updateDownloadState(msg.file, { progress: msg.progress, completed: false, speed: msg.speed, hoster: msg.hoster});
+          this.updateDownloadState(msg.file, { progress: msg.progress, completed: false, speed: msg.speed, hoster: msg.hoster, cancelToken: msg.cancelToken});
           break;
         case 'downloadComplete':
           console.log(msg.file, msg.progress, msg.completed, msg.error)

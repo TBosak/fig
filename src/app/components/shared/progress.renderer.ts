@@ -85,6 +85,7 @@ export class DownloadProgressRendererComponent
                   : state.error
                   ? 'Error'
                   : 'Downloading',
+                cancelToken: state.cancelToken,
               })
               .then(() => {
                 console.log(`Updated IndexedDB for fileId ${fileId}`);

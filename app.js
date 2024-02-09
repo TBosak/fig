@@ -252,8 +252,12 @@ wss.on("connection", async function connection(ws) {
       ws.send(JSON.stringify({ fileLinks: fileLinks }));
     }
     if(msg.cancelToken){
-      console.log("Cancelling token")
-      cancelTokens[msg.cancelToken]();
+        const cancel = cancelTokens[msg.cancelToken];
+        if (cancel) {
+          cancel(`Cancel requested for download with ID ${msg.requestId}`);
+        } else {
+          console.log('No active download with ID:', msg.requestId);
+        }
     }
   }catch(e){
     console.log(e);
