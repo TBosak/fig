@@ -63,18 +63,20 @@ export class FilesComponent implements OnInit {
     {
       field: 'id',
       comparator: (valueA, valueB, nodeA, nodeB, isDescending) => {
-        const firstState = this.downloadStatesCache[valueA]?.progress || 0;
-        const secondState = this.downloadStatesCache[valueB]?.progress || 0;
+        // Check for 'Completed' status or default to progress, treating 'Completed' as 100%
+        const getStatusProgress = (value:any) => {
+            const state = this.downloadStatesCache[value];
+            if (state?.completed === true) {
+                return 100; // Treat 'Completed' as 100% progress
+            }
+            return state?.progress || 0; // Use progress or default to 0
+        };
 
-        // Normal comparison logic based on progress
-        if (firstState === secondState) {
-          return 0; // Equal progress
-        } else if (firstState > secondState) {
-          return isDescending ? -1 : 1; // Higher progress
-        } else {
-          return isDescending ? 1 : -1; // Lower progress
-        }
-      },
+        const firstState = getStatusProgress(valueA);
+        const secondState = getStatusProgress(valueB);
+
+        return firstState - secondState;
+    },
       headerName: 'Download Progress',
       cellRenderer: DownloadProgressRendererComponent,
     },
@@ -199,14 +201,22 @@ export class FilesComponent implements OnInit {
   }
 
   async updateDownloadStatesCache(ids: number[]) {
-    const promises = ids.map((id: number) =>
-      firstValueFrom(this.electron.getDownloadState(id)).then((state) => ({
-        id,
-        state,
-      }))
-    );
+    // Map each id to a promise that resolves to { id, state }
+    const promises = ids.map(async (id: number) => {
+      // Await the promise from getDownloadState to get the observable
+      const downloadStateObservable = await this.electron.getDownloadState(id);
 
+      // Now, use firstValueFrom to convert the Observable to a Promise
+      const state = await firstValueFrom(downloadStateObservable);
+
+      // Return the object with id and state
+      return { id, state };
+    });
+
+    // Await all promises to resolve
     const results = await Promise.all(promises);
+
+    // Update the cache with the resolved states
     results.forEach(({ id, state }) => {
       this.downloadStatesCache[id] = state;
     });

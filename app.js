@@ -83,11 +83,11 @@ function createTray() {
   tray.setContextMenu(contextMenu);
 }
 
-setInterval(() => {
+setInterval(async () => {
   const currentClipText = clipboard.readText();
   if (currentClipText !== previousClipText) {
     previousClipText = currentClipText;
-    const fileLinks = extractFileLinksFromText(currentClipText);
+    const fileLinks = await extractFileLinksFromText(currentClipText);
     if (fileLinks.length > 0) {
       dialog
         .showMessageBox({
@@ -100,7 +100,7 @@ setInterval(() => {
           if (response === 0) {
             wss.clients.forEach(function each(client) {
               if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({ type: "fileLinks", fileLinks }));
+                client.send(JSON.stringify({ fileLinks: fileLinks }));
               }
             });
           }

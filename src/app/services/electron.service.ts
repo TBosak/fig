@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { db } from '../db/db';
 export class DownloadState {
   progress!: number;
   completed!: boolean;
@@ -65,10 +66,11 @@ export class ElectronService {
     }
   }
 
-private updateDownloadState(fileId: number, state: Partial<DownloadState>): void {
+private async updateDownloadState(fileId: number, state: Partial<DownloadState>): Promise<void>{
   if (!this.downloadStates[fileId]) {
-    this.downloadStates[fileId] = { progress: 0, completed: false };
-    this.downloadStateSubjects[fileId] = new BehaviorSubject<DownloadState>({ progress: 0, completed: false });
+    const dbState = await db.fileDownloads.get(fileId);
+    this.downloadStates[fileId] = { progress: dbState?.progress || 0, completed: (dbState?.status === 'Completed') || false};
+    this.downloadStateSubjects[fileId] = new BehaviorSubject<DownloadState>({ progress: dbState?.progress || 0, completed: (dbState?.status === 'Completed') || false });
   }
 
   // Update state
@@ -79,10 +81,11 @@ private updateDownloadState(fileId: number, state: Partial<DownloadState>): void
   this.allDownloadsSubject.next(this.downloadStates);
 }
 
-public getDownloadState(fileId: number): Observable<DownloadState> {
-  if (!this.downloadStateSubjects[fileId]) {
-    this.downloadStateSubjects[fileId] = new BehaviorSubject<DownloadState>({ progress: 0, completed: false });
-    this.downloadStates[fileId] = { progress: 0, completed: false };
+public async getDownloadState(fileId: number): Promise<Observable<DownloadState>> {
+  if (!this.downloadStates[fileId]) {
+    const dbState = await db.fileDownloads.get(fileId);
+    this.downloadStates[fileId] = { progress: dbState?.progress || 0, completed: (dbState?.status === 'Completed') || false};
+    this.downloadStateSubjects[fileId] = new BehaviorSubject<DownloadState>({ progress: dbState?.progress || 0, completed: (dbState?.status === 'Completed') || false });
   }
   return this.downloadStateSubjects[fileId].asObservable();
 }
