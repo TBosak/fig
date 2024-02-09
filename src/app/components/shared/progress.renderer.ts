@@ -12,11 +12,13 @@ import { db } from '../../db/db';
   template: `
   <ng-container *ngIf="downloadState | async as state">
     <progress max="100" [attr.data-label]="
-      state.completed
+      (state.completed
         ? 'Completed'
         : state.error
         ? 'Error: ' + state.error
-        : state.progress + '%'" [value]="state.progress"></progress>
+        : state.progress + '%') +
+        (state.speed ? ' (' + state.speed +') ' : '')
+        " [value]="state.progress"></progress>
   </ng-container>
 `,
   styles: `progress {

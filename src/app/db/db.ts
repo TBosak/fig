@@ -9,6 +9,7 @@ export interface FileDownload {
   status?: string;
   progress?: number;
   error?: string;
+  cancelToken?: string;
 }
 
 export interface AppState {

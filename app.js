@@ -12,6 +12,7 @@ const path = require("path");
 const WebSocket = require("ws");
 const axios = require("axios");
 const fs = require("fs");
+const { v4: uuidv4 } = require('uuid');
 const wss = new WebSocket.Server({ port: 8080 });
 
 let mainWindow;
@@ -109,117 +110,107 @@ setInterval(async () => {
   }
 }, 1000);
 
+cancelTokens = {};
+
 wss.on("connection", async function connection(ws) {
   ws.on("message", async function incoming(message) {
-    try{
-    const msg = JSON.parse(message);
-    if (Object.keys(msg)[0] === "download") {
-      const downloadPromises = msg.download.map((file) => {
-        // Check if the URL is a base64 encoded image
-        if (file.url.startsWith("data:image/")) {
+    try {
+      const msg = JSON.parse(message);
+      if (Object.keys(msg)[0] === "download") {
+        const downloadPromises = msg.download.map((file, index) => {
           return new Promise((resolve, reject) => {
-            // Extract the MIME type and the base64 data
-            const matches = file.url.match(
-              /^data:(image\/[a-zA-Z]+);base64,(.+)$/
-            );
-            if (!matches || matches.length !== 3) {
-              ws.send(
-                JSON.stringify({
-                  type: "downloadError",
-                  file: file.id,
-                  message: "Invalid base64 image data",
-                })
-              );
-              return reject(new Error("Invalid base64 image data"));
-            }
+            // Start time for download speed calculation
+            const startTime = Date.now();
+            let receivedBytes = 0;
+            let lastUpdateTime = Date.now();
+            const requestId = uuidv4(); // Generate a unique ID for the request
+            const source = axios.CancelToken.source();
+            cancelTokens[requestId] = source.cancel;
 
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-            const buffer = Buffer.from(base64Data, "base64");
+            axios({
+              method: "get",
+              url: file.url,
+              cancelToken: source.token,
+              responseType: "stream",
+            }).then(response => {
+              const totalBytes = parseInt(response.headers["content-length"], 10);
+              const hoster = new URL(file.url).hostname; // Extract hoster information from URL
 
-            // Determine the file extension based on the MIME type
-            const extension = mimeType.split("/")[1];
-            const fileName = `image_${Date.now()}_${index}.${extension}`;
-            const filePath = path.join(
-              file.customPath
-                ? file.customPath
-                : file.path
-                ? file.path
-                : app.getPath("downloads"),
-              fileName
-            );
-
-            fs.writeFile(filePath, buffer, (err) => {
-              if (err) {
-                ws.send(
-                  JSON.stringify({
-                    type: "downloadError",
+              response.data.on('data', chunk => {
+                receivedBytes += chunk.length;
+                const now = Date.now();
+                const durationInSeconds = (now - lastUpdateTime) / 1000;
+                if (durationInSeconds >= 1) { // Update every second
+                  let speed = (receivedBytes / durationInSeconds).toFixed(2); // bytes per second
+                  // calculate kb/s or mb/s
+                  if (speed < 1024) {
+                    speed = speed + " B/s";
+                  } else if (speed < 1048576) {
+                    speed = (speed / 1024).toFixed(2) + " KB/s";
+                  } else {
+                    speed = (speed / 1048576).toFixed(2) + " MB/s";
+                  }
+                  const progress = ((receivedBytes / totalBytes) * 100).toFixed(2);
+                  console.log(`Progress: ${progress}% - Speed: ${speed}`)
+                  ws.send(JSON.stringify({
+                    type: "downloadProgress",
                     file: file.id,
-                    message: err.message,
-                  })
-                );
-                reject(err);
-              } else {
-                ws.send(
-                  JSON.stringify({ type: "downloadComplete", file: file.id })
-                );
-                resolve();
-              }
-            });
-          });
-        } else {
-          // Handle regular file URLs with Axios
-          return axios({
-            method: "get",
-            url: file.url,
-            responseType: "stream",
-          }).then((response) => {
-            const fileName = file.url.split("/").pop();
-            const filePath = path.join(
-              file.customPath
-                ? file.customPath
-                : file.path
-                ? file.path
-                : app.getPath("downloads"),
-              fileName
-            );
-            const writer = fs.createWriteStream(filePath);
+                    progress: progress,
+                    speed: speed,
+                    hoster: hoster,
+                    cancelToken: requestId
+                  }));
+                  lastUpdateTime = now;
+                }
+              });
 
-            response.data.pipe(writer);
+              const fileName = file.url.split("/").pop();
+              const filePath = path.join(
+                file.customPath ? file.customPath : file.path ? file.path : app.getPath("downloads"),
+                fileName
+              );
+              const writer = fs.createWriteStream(filePath);
 
-            return new Promise((resolve, reject) => {
+              response.data.pipe(writer);
+
               writer.on("finish", () => {
-                ws.send(
-                  JSON.stringify({ type: "downloadComplete", file: file.id })
-                );
+                ws.send(JSON.stringify({ type: "downloadComplete", file: file.id, hoster: hoster }));
+                delete cancelTokens[requestId];
                 resolve();
               });
               writer.on("error", (error) => {
-                ws.send(
-                  JSON.stringify({
-                    type: "downloadError",
-                    file: file.id,
-                    message: error.message,
-                  })
-                );
+                ws.send(JSON.stringify({
+                  type: "downloadError",
+                  file: file.id,
+                  message: error.message,
+                  hoster: hoster
+                }));
                 reject(error);
               });
+            }).catch(error => {
+              ws.send(JSON.stringify({
+                type: "downloadError",
+                file: file.id,
+                message: error.message,
+                hoster: 'Unknown' // Use 'Unknown' or attempt to parse hoster from URL
+              }));
+              delete cancelTokens[requestId];
+              reject(error);
             });
           });
-        }
-      });
-
-      // Wait for all downloads to complete
-      Promise.allSettled(downloadPromises).then((results) => {
-        results.forEach((result, index) => {
-          if (result.status === "fulfilled") {
-            console.log(`File download successful`);
-          } else {
-            console.error(`Failed to download file: ${result.reason}`);
-          }
         });
-      });
-    }
+
+        // Wait for all downloads to complete
+        Promise.allSettled(downloadPromises).then((results) => {
+          results.forEach((result, index) => {
+            if (result.status === "fulfilled") {
+              console.log(`File download successful`);
+            } else {
+              console.error(`Failed to download file: ${result.reason}`);
+            }
+          });
+        });
+      }
     if (msg.setDefaultPath === true) {
       dialog
         .showOpenDialog({
@@ -259,6 +250,10 @@ wss.on("connection", async function connection(ws) {
       console.log("Checking links")
       const fileLinks = await extractFileLinksFromText(msg.checkLinks);
       ws.send(JSON.stringify({ fileLinks: fileLinks }));
+    }
+    if(msg.cancelToken){
+      console.log("Cancelling token")
+      cancelTokens[msg.cancelToken]();
     }
   }catch(e){
     console.log(e);

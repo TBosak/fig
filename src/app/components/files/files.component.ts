@@ -136,19 +136,6 @@ export class FilesComponent implements OnInit {
     this.gridApi = params.api;
   }
 
-  extractFileLinksFromText(text: any) {
-    // Matches both: URLs ending with specified file extensions and base64 encoded images
-    const urlRegex =
-      /\bhttps?:\/\/\S+\.(pdf|zip|rar|7z|tar|gz|bz2|docx|xlsx|pptx|mp3|mp4|ogg|wav|webm|jpg|jpeg|png|gif|csv)\b/gi;
-    const base64ImageRegex = /data:image\/[a-zA-Z]+;base64,[^\s]+/gi;
-
-    const fileLinks = text.match(urlRegex) || [];
-    const base64Images = text.match(base64ImageRegex) || [];
-
-    // Combine both arrays
-    return [...fileLinks, ...base64Images];
-  }
-
   onCellClicked(params: any) {
     // Handle click event for action cells
     if (
@@ -175,6 +162,7 @@ export class FilesComponent implements OnInit {
         params.api.applyTransaction({
           remove: [params.node.data],
         });
+        this.electron.sendMessage(JSON.stringify({ cancelToken: [params.node.data.cancelToken] }));
         this.deleteFile(params.node.data.id);
       }
 
