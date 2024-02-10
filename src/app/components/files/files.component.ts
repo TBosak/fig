@@ -32,7 +32,7 @@ function actionCellRenderer(params: any) {
 })
 export class FilesComponent implements OnInit {
   public gridApi!: GridApi;
-  downloadEnabled: boolean = false;
+  fileSelected: boolean = false;
   gridSelection: any;
   downloadStatesCache: { [fileId: number]: DownloadState } = {};
   appState!: AppState;
@@ -119,9 +119,9 @@ export class FilesComponent implements OnInit {
   onSelectionChanged(event: SelectionChangedEvent) {
     const selectedData = this.gridApi.getSelectedRows();
     if (selectedData.length > 0) {
-      this.downloadEnabled = true;
+      this.fileSelected = true;
     } else {
-      this.downloadEnabled = false;
+      this.fileSelected = false;
     }
   }
 
@@ -130,6 +130,28 @@ export class FilesComponent implements OnInit {
     this.electron.sendMessage(
       JSON.stringify({ download: Array.from(selectedData) })
     );
+  }
+
+  deleteSelected(){
+    const selectedData = this.gridApi.getSelectedRows();
+    this.gridApi.applyTransaction({
+      remove: selectedData
+    });
+    selectedData.forEach((file: FileDownload) => {
+      this.electron.sendMessage(JSON.stringify({ cancelToken: [file.cancelToken] }));
+      this.deleteFile(file.id || -1);
+    });
+  }
+
+  clearCompleted(){
+    this.files.forEach((file: FileDownload) => {
+      if(this.downloadStatesCache[file.id || -1]?.completed){
+        this.gridApi.applyTransaction({
+          remove: [file]
+        });
+        this.deleteFile(file.id || -1);
+      }
+    });
   }
 
   async onGridReady(params: any) {

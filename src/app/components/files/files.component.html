@@ -12,8 +12,14 @@ rowSelection="multiple"
 (cellClicked)="onCellClicked($event)"
 [columnDefs]="colDefs">
 </ag-grid-angular>
-<div>
-  <button mat-icon-button [disabled]="!downloadEnabled" (click)="downloadSelected()">
+<div class="float-right">
+  <button title="Download Selected" mat-icon-button [disabled]="!fileSelected" (click)="downloadSelected()">
     <mat-icon>download</mat-icon>
+  </button>
+  <button title="Delete Selected" mat-icon-button [disabled]="!fileSelected" (click)="deleteSelected()">
+    <mat-icon>delete</mat-icon>
+  </button>
+  <button title="Clear Completed" mat-icon-button (click)="clearCompleted()">
+    <mat-icon>clear</mat-icon>
   </button>
 </div>
