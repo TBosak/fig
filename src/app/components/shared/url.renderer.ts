@@ -32,7 +32,7 @@ export class UrlRendererComponent implements ICellRendererAngularComp {
 
   agInit(params: any): void {
     this.params = params;
-    this.isImage = this.isImageUrl(params.value);
+    this.isImage = this.isImageUrl(params.value) || this.isBase64Url(params.value);
     this.fileIcon = this.setIcon(params.value);
   }
 
@@ -50,6 +50,10 @@ export class UrlRendererComponent implements ICellRendererAngularComp {
 
   isImageUrl(url: string): boolean {
     return (/\.(gif|jpe?g|tiff?|png|webp|bmp)$/i).test(url);
+  }
+
+  isBase64Url(url: string): boolean {
+    return (/^data:image\/[a-z]+;base64,/i).test(url);
   }
 
   isDocumentUrl(url: string): boolean {

@@ -66,6 +66,10 @@ export class ElectronService {
       this.ws.send(message);
     } else {
       console.error('WebSocket is not open. Message not sent:', message);
+      this.connect();
+      this.ws?.addEventListener('open', () => {
+        this.ws?.send(message);
+      });
     }
   }
 
