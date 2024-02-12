@@ -8,11 +8,11 @@ class="ag-theme-quartz"
 rowSelection="multiple"
 (selectionChanged)="onSelectionChanged($event)"
 (gridReady)="onGridReady($event)"
-[rowData]="fileLinks | async"
+[rowData]="files"
 (cellClicked)="onCellClicked($event)"
 [columnDefs]="colDefs">
 </ag-grid-angular>
-<div class="float-right">
+<div>
   <button title="Download Selected" mat-icon-button [disabled]="!fileSelected" (click)="downloadSelected()">
     <mat-icon>download</mat-icon>
   </button>
