@@ -16,8 +16,8 @@ import { MatInputModule } from "@angular/material/input";
     <mat-form-field appearance="fill">
       <textarea matInput placeholder="Paste urls to scrape here" matTextareaAutosize matAutosizeMinRows="4" [(ngModel)]="data.scrapeUrls"></textarea>
     </mat-form-field>
-    <input hidden="true" id="input-file-id" multiple type="file" [(ngModel)]="data.files" />
-    <label for="input-file-id" class="mat-raised-button">Choose File(s) with List(s)</label>
+    <!-- <input hidden="true" id="input-file-id" multiple type="file" [(ngModel)]="data.files" />
+    <label for="input-file-id" class="mat-raised-button">Choose File(s) with List(s)</label> -->
   </div>
   <div mat-dialog-actions align="center" class="w-100 m-0">
   <button mat-raised-button [mat-dialog-close]="data" cdkFocusInitial class="w-100">Add Links</button>

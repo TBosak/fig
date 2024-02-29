@@ -250,7 +250,14 @@ export class FilesComponent implements OnInit {
         );
       }
       if (result.files) {
-      }
-    });
+        Array.from(result.files).forEach((file: any) => {
+          file.text().then((data: any) => {
+            this.electron.sendMessage(
+              JSON.stringify({ checkLinks: [data.value] })
+            );
+          });
+      });
+    }
+  });
   }
 }
