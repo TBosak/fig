@@ -135,28 +135,45 @@ wss.on("connection", async function connection(ws) {
             }).then(response => {
               const totalBytes = parseInt(response.headers["content-length"], 10);
               const hoster = new URL(file.url).hostname; // Extract hoster information from URL
-
+              const windowSize = 5;
+              let recentSpeeds = [];
+              let downloaded = 0;
               response.data.on('data', chunk => {
                 receivedBytes += chunk.length;
                 const now = Date.now();
-                const durationInSeconds = (now - lastUpdateTime) / 1000;
-                if (durationInSeconds >= 1) { // Update every second
-                  let speed = (receivedBytes / durationInSeconds).toFixed(2); // bytes per second
-                  // calculate kb/s or mb/s
-                  if (speed < 1024) {
-                    speed = speed + " B/s";
-                  } else if (speed < 1048576) {
-                    speed = (speed / 1024).toFixed(2) + " KB/s";
-                  } else {
-                    speed = (speed / 1048576).toFixed(2) + " MB/s";
+                // Only update speed every second or on significant download progress
+                if (now - lastUpdateTime >= 1000) {
+                  const durationInSeconds = (now - lastUpdateTime) / 1000;
+                  const speed = (chunk.length / durationInSeconds); // Use total bytes received over the interval
+
+                  // Update moving average calculation
+                  if (recentSpeeds.length >= windowSize) {
+                    recentSpeeds.shift();
                   }
+                  recentSpeeds.push(speed);
+
+                  let avgSpeed = recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length;
+
+                  // Convert avgSpeed to appropriate unit and update lastUpdateTime
+                  lastUpdateTime = now;
+                  // Convert avg speed to appropriate unit (B/s, KB/s, MB/s)
+                  if (avgSpeed < 1024) {
+                    avgSpeed = avgSpeed.toFixed(2) + " B/s";
+                  } else if (avgSpeed < 1048576) {
+                    avgSpeed = (avgSpeed / 1024).toFixed(2) + " KB/s";
+                  } else {
+                    avgSpeed = (avgSpeed / 1048576).toFixed(2) + " MB/s";
+                  }
+
+                  // Remaining code for progress and logging
                   const progress = ((receivedBytes / totalBytes) * 100).toFixed(2);
-                  console.log(`Progress: ${progress}% - Speed: ${speed}`)
+                  console.log(`Progress: ${progress}% - Speed: ${avgSpeed}`); // Use avg from SMA
+                  // Send progress update
                   ws.send(JSON.stringify({
                     type: "downloadProgress",
                     file: file.id,
                     progress: progress,
-                    speed: speed,
+                    speed: avgSpeed,
                     hoster: hoster,
                     cancelToken: requestId
                   }));

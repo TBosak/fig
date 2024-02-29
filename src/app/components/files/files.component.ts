@@ -32,23 +32,25 @@ function actionCellRenderer(params: any) {
 })
 export class FilesComponent implements OnInit {
   public gridApi!: GridApi;
+  selectedRowIds: Set<number> = new Set();
   fileSelected: boolean = false;
   gridSelection: any;
   downloadStatesCache: { [fileId: number]: DownloadState } = {};
   appState!: AppState;
   colDefs: ColDef<FileDownload>[] = [
     {
-      field: 'id',
       headerName: '',
       checkboxSelection: true,
       headerCheckboxSelection: true,
       width: 50,
+      filter: true
     },
     {
       field: 'url',
       headerName: 'URL',
       width: 150,
       cellRenderer: UrlRendererComponent,
+      filter: true
     },
     {
       field: 'customPath',
@@ -110,19 +112,25 @@ export class FilesComponent implements OnInit {
     });
     this.fileLinks.subscribe((fileLinks) => {
       this.files = fileLinks;
+      setTimeout(() => this.reselectRows(), 0);
     });
     interval(500).subscribe(() => {
       this.updateDownloadStatesCache(this.files.map((file) => file.id ?? -1));
     });
   }
 
+  reselectRows() {
+    this.gridApi.forEachNode(node => {
+      if (this.selectedRowIds.has(node.data.id)) {
+        node.setSelected(true);
+      }
+    });
+  }
+
   onSelectionChanged(event: SelectionChangedEvent) {
-    const selectedData = this.gridApi.getSelectedRows();
-    if (selectedData.length > 0) {
-      this.fileSelected = true;
-    } else {
-      this.fileSelected = false;
-    }
+    const selectedNodes = this.gridApi.getSelectedNodes();
+    this.selectedRowIds = new Set(selectedNodes.map(node => node.data.id));
+    this.fileSelected = this.selectedRowIds.size > 0;
   }
 
   downloadSelected() {
