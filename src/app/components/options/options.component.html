@@ -1,6 +1,6 @@
-<div class="btn-group" role="group">
-  <button class="btn btn-outline-dark" (click)="setDefaultPath()">Choose Download Location</button>
-  <button class="btn btn-outline-dark">
+<div class="btn-group w-100" role="group">
+  <button [style.width]="'90%'" class="btn btn-outline-dark" (click)="setDefaultPath()">Choose Download Location</button>
+  <button [style.width]="'10%'" class="btn btn-outline-dark" (click)="resetDefaultPath()">
     <mat-icon>restart_alt</mat-icon>
   </button>
 </div>

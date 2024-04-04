@@ -176,7 +176,7 @@ export class FilesComponent implements OnInit {
 
       if (action === 'download') {
         this.electron.sendMessage(
-          JSON.stringify({ download: [params.node.data.url] })
+          JSON.stringify({ download: [params.node.data] })
         );
       }
 

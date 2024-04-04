@@ -120,12 +120,12 @@ wss.on("connection", async function connection(ws) {
         const downloadPromises = msg.download.map((file, index) => {
           return new Promise((resolve, reject) => {
             // Start time for download speed calculation
-            const startTime = Date.now();
             let receivedBytes = 0;
             let lastUpdateTime = Date.now();
             const requestId = uuidv4(); // Generate a unique ID for the request
             const source = axios.CancelToken.source();
             cancelTokens[requestId] = source.cancel;
+            console.log(`Starting download for ${file.url}`)
 
             axios({
               method: "get",
@@ -133,11 +133,11 @@ wss.on("connection", async function connection(ws) {
               cancelToken: source.token,
               responseType: "stream",
             }).then(response => {
+              console.log(`Starting download for ${file.url}`)
               const totalBytes = parseInt(response.headers["content-length"], 10);
               const hoster = new URL(file.url).hostname; // Extract hoster information from URL
               const windowSize = 5;
               let recentSpeeds = [];
-              let downloaded = 0;
               response.data.on('data', chunk => {
                 receivedBytes += chunk.length;
                 const now = Date.now();
@@ -150,6 +150,7 @@ wss.on("connection", async function connection(ws) {
                   if (recentSpeeds.length >= windowSize) {
                     recentSpeeds.shift();
                   }
+                  console.log(`Speed: ${speed}`)
                   recentSpeeds.push(speed);
 
                   let avgSpeed = recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length;
@@ -169,6 +170,7 @@ wss.on("connection", async function connection(ws) {
                   const progress = ((receivedBytes / totalBytes) * 100).toFixed(2);
                   console.log(`Progress: ${progress}% - Speed: ${avgSpeed}`); // Use avg from SMA
                   // Send progress update
+                  console.log(`Sending download progress for ${file.url}`)
                   ws.send(JSON.stringify({
                     type: "downloadProgress",
                     file: file.id,
